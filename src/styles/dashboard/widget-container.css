@@ -1,11 +1,13 @@
 .widget-container-custom {
     padding: 16px;
     border-radius: 8px;
-    background-color: #f9f9f9;
+    background-color: #ffffff;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     display: flex;
     flex-direction: column;
     gap: 10px;
+    width: 90%;
+    margin: 10px auto;
 }
 
 .widget-container-topic {
@@ -13,3 +15,21 @@
     text-align: center;
     margin-bottom: 16px;
 }
+
+.year-selection {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px; /* Space between elements */
+    color: #003366; /* Dark blue color */
+}
+
+.year-label {
+    font-size: 1rem;
+    display: flex;
+    align-items: center;
+}
+
+.year-checkbox {
+    margin-right: 5px; /* Space between checkbox and year text */
+}
+
