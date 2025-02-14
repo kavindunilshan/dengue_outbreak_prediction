@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import WidgetContainer from "../components/dashboard/widget-container.jsx";
 import { LineChart } from "../components/dashboard/chats/weekly-cases.jsx";
 import data from "/public/dengue-cases.json";
+import RJMap from "../components/dashboard/chats/rj-map.jsx";
 
 function Dashboard() {
     const dummyData = data;
@@ -35,6 +36,10 @@ function Dashboard() {
                         ))}
                     </div>
                     <LineChart data={filteredData}/>
+                </WidgetContainer>
+
+                <WidgetContainer title="Map">
+                    <RJMap/>
                 </WidgetContainer>
             </div>
         </div>
