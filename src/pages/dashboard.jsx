@@ -1,17 +1,22 @@
-import React, { useState } from 'react';
+import React, {useRef, useState} from 'react';
 import WidgetContainer from "../components/dashboard/widget-container.jsx";
 import { LineChart } from "../components/dashboard/chats/weekly-cases.jsx";
 import data from "/public/dengue-cases.json";
 import RJMap from "../components/dashboard/chats/rj-map.jsx";
-import weeklyCases from "/public/weekly_cases.json";
+import weeklyCases from "/public/actual-weekly_cases.json";
+import weeklyPredictions from "/public/weekly_predictions.json";
+import {PredictionsChart} from "../components/dashboard/chats/Predictions.jsx";
 
 function Dashboard() {
     const dummyData = data;
     const weeklyCasesData = weeklyCases;
+    const weeklyPredictionsData = weeklyPredictions;
 
     const [selectedYears, setSelectedYears] = useState(Object.keys(dummyData));
-    const [selectedCity, setSelectedCity] = useState("");
+    const [selectedCity, setSelectedCity] = useState("Angra Dos Reis");
     const [selectedGeocode, setSelectedGeocode] = useState("3300100");
+
+    const targetRef = useRef(null);
 
     const toggleYear = (year) => {
         setSelectedYears(prev =>
@@ -23,9 +28,17 @@ function Dashboard() {
         Object.entries(dummyData).filter(([year]) => selectedYears.includes(year))
     );
 
+    const scrollToTarget = () => {
+        if (targetRef.current) {
+            targetRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+    };
+
     const handleCitySelect = (city, geocode) => {
         setSelectedCity(city)
         setSelectedGeocode(geocode)
+
+        scrollToTarget();
     }
 
     return (
@@ -51,10 +64,27 @@ function Dashboard() {
                     <RJMap onSelect={handleCitySelect}/>
                 </WidgetContainer>
 
-                <WidgetContainer title={`Cases per epidemilogical weeks for ${selectedCity}`}>
+                <div ref={targetRef}></div>
+
+                <WidgetContainer title={`Cases per epidemiological weeks for ${selectedCity}`}>
                     <LineChart data={weeklyCasesData[selectedGeocode]}/>
                 </WidgetContainer>
 
+                <WidgetContainer title={`Actual vs Predicted cases for city ${selectedCity}: Year 2022`}>
+                    <PredictionsChart geocode={selectedGeocode}
+                                      actualData={weeklyCasesData}
+                                      predictedData={weeklyPredictions}
+                                      year={2022}
+                    />
+                </WidgetContainer>
+
+                <WidgetContainer title={`Actual vs Predicted cases for city ${selectedCity}: Year 2021`}>
+                    <PredictionsChart geocode={selectedGeocode}
+                                      actualData={weeklyCasesData}
+                                      predictedData={weeklyPredictionsData}
+                                      year={2021}
+                    />
+                </WidgetContainer>
 
             </div>
         </div>

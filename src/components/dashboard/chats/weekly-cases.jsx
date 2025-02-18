@@ -5,18 +5,6 @@ export const LineChart = ({ data }) => {
     const [selectedYears, setSelectedYears] = useState(new Set(Object.keys(data)));
     const weeks = Array.from({ length: 52 }, (_, i) => `Week ${i + 1}`);
 
-    const toggleYear = (year) => {
-        setSelectedYears((prev) => {
-            const newSelection = new Set(prev);
-            if (newSelection.has(year)) {
-                newSelection.delete(year);
-            } else {
-                newSelection.add(year);
-            }
-            return newSelection;
-        });
-    };
-
     const traces = Object.keys(data)
         .filter((year) => selectedYears.has(year))
         .map((year) => ({
