@@ -1,8 +1,7 @@
-import React, { useState } from "react";
+import React from "react";
 import Plot from "react-plotly.js";
 
 export const PredictionsChart = ({ actualData, predictedData, geocode, year }) => {
-    const [selectedYears] = useState(new Set([year]));
     const weeks = Array.from({ length: 52 }, (_, i) => `Week ${i + 1}`);
 
     if (!geocode || !actualData[geocode] || !predictedData[geocode]) {
