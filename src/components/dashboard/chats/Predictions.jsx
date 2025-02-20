@@ -18,7 +18,7 @@ export const PredictionsChart = ({ actualData, predictedData, geocode, year }) =
     const predictedTraces = [year].map((year) => ({
         x: weeks,
         y: weeks.map((week, index) => {
-            const weekKey = `${year}${(index + 1).toString().padStart(2, "0")}`;
+            const weekKey = `${year}${(index - 1).toString().padStart(2, "0")}`;
             return predictedData[geocode][weekKey] || 0;
         }),
         mode: "lines",
