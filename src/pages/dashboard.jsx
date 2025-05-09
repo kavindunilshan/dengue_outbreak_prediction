@@ -1,7 +1,8 @@
 import React, {useState} from 'react';
 import Cases from "./cases.jsx";
 import Weather from "./weather.jsx";
-import {Box, Tab, Tabs, Typography} from "@mui/material";
+import {Box, Tab, Tabs} from "@mui/material";
+import PredictionForm from "./predictions.jsx";
 
 function Dashboard() {
     const [tabIndex, setTabIndex] = useState(0);
@@ -13,12 +14,14 @@ function Dashboard() {
                 <Tabs value={tabIndex} onChange={(e, newIndex) => setTabIndex(newIndex)} centered>
                     <Tab label="Cases" />
                     <Tab label="Weather Comparison" />
+                    <Tab label="Predictions" />
                 </Tabs>
             </Box>
 
             <div className="widget-grid">
                 { tabIndex === 0 && <Cases />}
                 { tabIndex === 1 && <Weather />}
+                { tabIndex === 2 && <PredictionForm /> }
             </div>
         </div>
     );
