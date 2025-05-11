@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import axios from 'axios';
 import { TextField, Button, Typography, Card, CardContent, Box, Grid } from '@mui/material';
 import '../styles/dashboard/predictions.css';
 
@@ -12,6 +13,7 @@ const PredictionForm = () => {
         humidityAvg: '',
         precipitationLag3: '',
         precipitationLag4: '',
+        population: ''
     });
 
     const [errors, setErrors] = useState({});
@@ -22,7 +24,7 @@ const PredictionForm = () => {
         if (!/^\d{6}$/.test(formData.week)) {
             newErrors.week = 'Week must be in format like 202152';
         }
-        ['casesLag0', 'casesLag1', 'vim', 'tempAvg', 'humidityAvg', 'population', 'precipitationLag3', 'precipitationLag4' ].forEach((field) => {
+        ['casesLag0', 'casesLag1', 'vim', 'tempAvg', 'humidityAvg', 'population', 'precipitationLag3', 'precipitationLag4'].forEach((field) => {
             if (isNaN(formData[field]) || formData[field] === '') {
                 newErrors[field] = 'Enter a valid number';
             }
@@ -38,35 +40,32 @@ const PredictionForm = () => {
     const handlePredict = async () => {
         if (!validate()) return;
 
-        const year = parseInt(formData.week.substring(0, 4));
-        const weekOfYear = parseInt(formData.week.substring(4, 6));
-        const month = Math.floor((weekOfYear - 1) / 4.33) + 1;
+        try {
+            const payload = {
+                week: parseInt(formData.week),
+                temp_avg: parseFloat(formData.tempAvg),
+                humidity_avg: parseFloat(formData.humidityAvg),
+                vim: parseFloat(formData.vim),
+                cases_lag0: parseFloat(formData.casesLag0),
+                cases_lag1: parseFloat(formData.casesLag1),
+                precipitation_avg_ordinary_kriging_lag3: parseFloat(formData.precipitationLag3),
+                precipitation_avg_ordinary_kriging_lag4: parseFloat(formData.precipitationLag4),
+                population: parseFloat(formData.population)
+            };
 
-        const casesLag0 = parseFloat(formData.casesLag0);
-        const population = parseFloat(formData.population);
+            const [week1Res, week2Res] = await Promise.all([
+                axios.post('http://127.0.0.1:8000/predict-week1', payload),
+                axios.post('http://127.0.0.1:8000/predict-week2', payload)
+            ]);
 
-        const payload = {
-            cases_lag0: casesLag0,
-            vim: parseFloat(formData.vim),
-            cases_lag1: parseFloat(formData.casesLag1),
-            cases_per_100k: (casesLag0 / population) * 100000,
-            week: formData.week,
-            temp_avg: parseFloat(formData.tempAvg),
-            month_cos: Math.cos((2 * Math.PI * month) / 12),
-            month_sin: Math.sin((2 * Math.PI * month) / 12),
-            week_cos: Math.cos((2 * Math.PI * weekOfYear) / 52),
-            week_sin: Math.sin((2 * Math.PI * weekOfYear) / 52),
-            humidity_avg: parseFloat(formData.humidityAvg),
-            precipitation_lag3: parseFloat(formData.precipitationLag3),
-            precipitation_lag4: parseFloat(formData.precipitationLag4),
-        };
-
-        // Replace this with actual API call
-        const dummyPrediction = {
-            nextWeek: 45,
-            weekAfter: 52,
-        };
-        setPrediction(dummyPrediction);
+            setPrediction({
+                nextWeek: week1Res.data.prediction,
+                weekAfter: week2Res.data.prediction
+            });
+        } catch (error) {
+            console.error('Prediction API error:', error);
+            alert('Prediction failed. Please check the backend or input values.');
+        }
     };
 
     return (
