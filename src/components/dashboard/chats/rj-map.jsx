@@ -2,38 +2,35 @@ import React, { useEffect, useState } from "react";
 import Plot from "react-plotly.js";
 import geoJson from "/public/geo.json";
 import cityData from "/public/city_mapping.json";
-import normalizedData from "/public/total_cases_by_geocode.json";
+import normalizedData from "/public/outbreak.json";
 
 const RJMap = ({ onSelect }) => {
     const cityMappings = cityData;
 
-    const [cityColors, setCityColors] = useState({});
+    const [cityValues, setCityValues] = useState({});
     const [selectedCity, setSelectedCity] = useState(null);
 
     useEffect(() => {
-        const colors = {};
+        const values = {};
 
         geoJson.features.forEach((feature) => {
-            const cityName = feature.properties.NOME; // Extract city name from properties
-
-            // Find geocode in cityMappings
+            const cityName = feature.properties.NOME;
             const geocode = feature.properties.GEOCODIGO;
+            const value = normalizedData[geocode] ?? 0;
 
-            console.log(normalizedData[3300100], normalizedData[geocode])
+            // Bucket values to discrete levels:
+            let bucket = 0; // default: no cases
+            if (value < 1) bucket = 1;
+            else if (value < 10) bucket = 2;
+            else if (value < 30) bucket = 3;
+            else if (value < 50) bucket = 4;
+            else if (value < 100) bucket = 5;
+            else bucket = 6;
 
-            // Get the normalized value (default to 0 if not found)
-            const normalizedValue = geocode ? normalizedData[geocode] : 0;
-
-            console.log("val", normalizedValue)
-
-            // Generate a red color based on the normalized value (0 -> light red, 1 -> dark red)
-            const colorIntensity = Math.floor(normalizedValue * 255);
-            colors[cityName] = Math.random();
-            // colors[cityName] = `rgb(255, ${255 - colorIntensity}, ${255 - colorIntensity})`;
+            values[cityName] = bucket;
         });
 
-        console.log(colors)
-        setCityColors(colors);
+        setCityValues(values);
     }, []);
 
     const handleCityClick = (event) => {
@@ -41,7 +38,6 @@ const RJMap = ({ onSelect }) => {
             const cityName = event.points[0].location;
             setSelectedCity(cityName);
 
-            // Find geocode in cityMappings
             const geocode = Object.keys(cityMappings).find(
                 (key) => key.toLowerCase() === cityName.toLowerCase()
             );
@@ -57,13 +53,30 @@ const RJMap = ({ onSelect }) => {
                     {
                         type: "choroplethmapbox",
                         geojson: geoJson,
-                        locations: Object.keys(cityColors), // City names from GeoJSON
-                        z: Object.values(cityColors), // Assign colors based on normalized data
+                        locations: Object.keys(cityValues),
+                        z: Object.values(cityValues),
                         featureidkey: "properties.NOME",
                         colorscale: [
-                            [0, "rgb(255, 230, 230)"], // Light red for low cases
-                            [1, "rgb(255, 0, 0)"], // Dark red for high cases
+                            [0, "#f0f0f0"], // no data / 0
+                            [0.17, "#ffebee"], // <1 (very light red)
+                            [0.34, "#ffcdd2"], // 1–10
+                            [0.51, "#ef9a9a"], // 10–30
+                            [0.68, "#e57373"], // 30–50
+                            [0.85, "#ef5350"], // 50–100
+                            [1, "#b71c1c"],   // >100 (dark red)
                         ],
+                        colorbar: {
+                            title: "Dengue Cases",
+                            tickvals: [1, 2, 3, 4, 5, 6],
+                            ticktext: [
+                                "<1",
+                                "1–10",
+                                "10–30",
+                                "30–50",
+                                "50–100",
+                                "100+"
+                            ],
+                        },
                         marker: { line: { width: 1, color: "#000" } },
                         showscale: true,
                     },
