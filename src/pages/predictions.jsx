@@ -1,9 +1,22 @@
 import React, { useState } from 'react';
 import axios from 'axios';
-import { TextField, Button, Typography, Card, CardContent, Box, Grid } from '@mui/material';
+import {
+    TextField,
+    Button,
+    Typography,
+    Card,
+    CardContent,
+    Box,
+    Grid,
+    Tabs,
+    Tab,
+    MenuItem
+} from '@mui/material';
+import cityMappings from "/public/city_mapping.json";
 import '../styles/dashboard/predictions.css';
 
 const PredictionForm = () => {
+    const [tab, setTab] = useState(0);
     const [formData, setFormData] = useState({
         casesLag0: '',
         vim: '',
@@ -13,22 +26,36 @@ const PredictionForm = () => {
         humidityAvg: '',
         precipitationLag3: '',
         precipitationLag4: '',
-        population: ''
+        population: '',
+        geocode: ''
     });
-
     const [errors, setErrors] = useState({});
     const [prediction, setPrediction] = useState({ nextWeek: null, weekAfter: null });
+
+    const handleTabChange = (event, newValue) => {
+        setTab(newValue);
+        setPrediction({ nextWeek: null, weekAfter: null });
+    };
 
     const validate = () => {
         const newErrors = {};
         if (!/^\d{6}$/.test(formData.week)) {
             newErrors.week = 'Week must be in format like 202152';
         }
-        ['casesLag0', 'casesLag1', 'vim', 'tempAvg', 'humidityAvg', 'population', 'precipitationLag3', 'precipitationLag4'].forEach((field) => {
+
+        const fields = ['casesLag0', 'casesLag1', 'vim', 'tempAvg', 'humidityAvg', 'population', 'precipitationLag3', 'precipitationLag4'];
+        fields.forEach((field) => {
             if (isNaN(formData[field]) || formData[field] === '') {
                 newErrors[field] = 'Enter a valid number';
             }
         });
+
+        console.log(formData.geocode);
+
+        if (tab === 1 && !formData.geocode ) {
+            newErrors.geocode = 'Geocode is required';
+        }
+
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
     };
@@ -40,28 +67,36 @@ const PredictionForm = () => {
     const handlePredict = async () => {
         if (!validate()) return;
 
+        const payload = {
+            week: parseInt(formData.week),
+            temp_avg: parseFloat(formData.tempAvg),
+            humidity_avg: parseFloat(formData.humidityAvg),
+            vim: parseFloat(formData.vim),
+            cases_lag0: parseFloat(formData.casesLag0),
+            cases_lag1: parseFloat(formData.casesLag1),
+            precipitation_avg_ordinary_kriging_lag3: parseFloat(formData.precipitationLag3),
+            precipitation_avg_ordinary_kriging_lag4: parseFloat(formData.precipitationLag4),
+            population: parseFloat(formData.population)
+        };
+
         try {
-            const payload = {
-                week: parseInt(formData.week),
-                temp_avg: parseFloat(formData.tempAvg),
-                humidity_avg: parseFloat(formData.humidityAvg),
-                vim: parseFloat(formData.vim),
-                cases_lag0: parseFloat(formData.casesLag0),
-                cases_lag1: parseFloat(formData.casesLag1),
-                precipitation_avg_ordinary_kriging_lag3: parseFloat(formData.precipitationLag3),
-                precipitation_avg_ordinary_kriging_lag4: parseFloat(formData.precipitationLag4),
-                population: parseFloat(formData.population)
-            };
-
-            const [week1Res, week2Res] = await Promise.all([
-                axios.post('http://127.0.0.1:8000/predict-week1', payload),
-                axios.post('http://127.0.0.1:8000/predict-week2', payload)
-            ]);
-
-            setPrediction({
-                nextWeek: week1Res.data.prediction,
-                weekAfter: week2Res.data.prediction
-            });
+            if (tab === 0) {
+                const [week1Res, week2Res] = await Promise.all([
+                    axios.post('http://127.0.0.1:8000/predict-week1', payload),
+                    axios.post('http://127.0.0.1:8000/predict-week2', payload)
+                ]);
+                setPrediction({
+                    nextWeek: week1Res.data.prediction,
+                    weekAfter: week2Res.data.prediction
+                });
+            } else {
+                const rioPayload = { ...payload, geocode: formData.geocode };
+                const res = await axios.post('http://127.0.0.1:8000/predict-rio-week2', rioPayload);
+                setPrediction({
+                    nextWeek: null,
+                    weekAfter: res.data.prediction
+                });
+            }
         } catch (error) {
             console.error('Prediction API error:', error);
             alert('Prediction failed. Please check the backend or input values.');
@@ -75,10 +110,35 @@ const PredictionForm = () => {
                     <Typography variant="h5" className="form-title">
                         Dengue Outbreak Predictor
                     </Typography>
-                    <Typography className="form-subtitle">
+                    <Tabs value={tab} onChange={handleTabChange} sx={{ marginTop: 2 }}>
+                        <Tab label="🌍 General Prediction" />
+                        <Tab label="📍 Rio State Specific" />
+                    </Tabs>
+                    <Typography className="form-subtitle" sx={{ mt: 2 }}>
                         Enter current data to predict dengue cases for the next two weeks
                     </Typography>
+
                     <Grid container spacing={2} sx={{ marginTop: '10px' }} className="form-grid">
+                        {tab === 1 && (
+                            <Grid item xs={12} sm={6}>
+                                <TextField
+                                    select
+                                    label="Select Rio City"
+                                    name="geocode"
+                                    value={formData.geocode}
+                                    onChange={handleChange}
+                                    fullWidth
+                                    error={!!errors.geocode}
+                                    helperText={errors.geocode}
+                                >
+                                    {Object.entries(cityMappings).map(([name, code]) => (
+                                        <MenuItem key={code} value={code}>
+                                            {name}
+                                        </MenuItem>
+                                    ))}
+                                </TextField>
+                            </Grid>
+                        )}
                         <Grid item xs={12} sm={6}>
                             <TextField
                                 label="This Week's Dengue Cases"
@@ -194,10 +254,12 @@ const PredictionForm = () => {
                         </Grid>
                     </Grid>
 
-                    {prediction.nextWeek !== null && (
+                    {prediction.weekAfter !== null && (
                         <Box className="result-box">
                             <Typography className="result-title">Prediction Results</Typography>
-                            <Typography>🟠 Next Week: {prediction.nextWeek} cases</Typography>
+                            {tab === 0 && (
+                                <Typography>🟠 Next Week: {prediction.nextWeek} cases</Typography>
+                            )}
                             <Typography>🔴 Week After: {prediction.weekAfter} cases</Typography>
                         </Box>
                     )}
