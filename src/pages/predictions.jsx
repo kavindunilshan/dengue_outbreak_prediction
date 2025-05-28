@@ -258,9 +258,9 @@ const PredictionForm = () => {
                         <Box className="result-box">
                             <Typography className="result-title">Prediction Results</Typography>
                             {tab === 0 && (
-                                <Typography>🟠 Next Week: {prediction.nextWeek} cases</Typography>
+                                <Typography>🟠 Next Week Forecast: {prediction.nextWeek} cases</Typography>
                             )}
-                            <Typography>🔴 Week After: {prediction.weekAfter} cases</Typography>
+                            <Typography>🔴 2 Weeks Ahead Forecast: {prediction.weekAfter} cases</Typography>
                         </Box>
                     )}
                 </CardContent>

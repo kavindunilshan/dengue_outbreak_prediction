@@ -11,12 +11,15 @@ import {
     CircularProgress,
     Alert
 } from '@mui/material';
+import RJMapPredicted from "../components/dashboard/chats/rj-map-predicted.jsx";
 
 const BulkPredictionForm = () => {
     const [file, setFile] = useState(null);
     const [loading, setLoading] = useState(false);
     const [results, setResults] = useState([]);
     const [error, setError] = useState('');
+    const [week, setWeek] = useState(null);
+    const [selectedCity, setSelectedCity] = useState(null);
 
     const requiredColumns = [
         'week',
@@ -80,6 +83,11 @@ const BulkPredictionForm = () => {
                     population: Number(row.population),
                 }));
 
+                // Extract week from the first row
+                if (typedData.length > 0 && typedData[0].week) {
+                    setWeek(typedData[0].week);
+                }
+
                 console.log('Typed Data for Prediction:', typedData);
 
                 try {
@@ -122,14 +130,27 @@ const BulkPredictionForm = () => {
 
                     {results.length > 0 && (
                         <Box sx={{ mt: 3 }}>
-                            <Typography variant="h6">Prediction Results</Typography>
-                            {results.map((item, index) => (
-                                <Typography key={index}>
-                                    📍 {item.geocode} — Predicted Cases: {item.prediction}
+                            <Typography variant="h6" sx={{ mb: 1 }}>
+                                Predicted Dengue Cases Map — Week {week ?? 'N/A'}
+                            </Typography>
+                            <RJMapPredicted
+                                predictions={results}
+                                onSelect={(city, geocode) => {
+                                    setSelectedCity({ city, geocode });
+                                    console.log("Selected city:", city, "Geocode:", geocode);
+                                }}
+                            />
+                            {selectedCity && (
+                                <Typography sx={{ mt: 2 }}>
+                                    📍 Selected City: {selectedCity.city} (Geocode: {selectedCity.geocode}) —
+                                    2 Weeks Ahead Forecast: {
+                                    results.find(item => String(item.geocode) === String(selectedCity.geocode))?.prediction ?? 'N/A'
+                                } dengue cases
                                 </Typography>
-                            ))}
+                            )}
                         </Box>
                     )}
+
                 </CardContent>
             </Card>
         </Box>
